@@ -1,0 +1,16 @@
+{
+  "name": "NLU Wayfinder – Chỉ đường Campus Nông Lâm",
+  "short_name": "NLU Wayfinder",
+  "description": "Chỉ đường đi bộ trong campus ĐH Nông Lâm TP.HCM đến từng phòng học / phòng chức năng.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f3d20",
+  "theme_color": "#1f7a3d",
+  "lang": "vi",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

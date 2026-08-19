@@ -1,0 +1,174 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#1f7a3d">
+<title>NLU Wayfinder – Chỉ đường Campus Nông Lâm</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icon.svg">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; font-family: system-ui, "Segoe UI", Roboto, Arial, sans-serif; color: #1c2b20; }
+  .app { display: flex; height: 100%; }
+  .sidebar { width: 400px; min-width: 400px; display: flex; flex-direction: column; background: #f6faf6; border-right: 1px solid #dbe7dc; }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: #1f7a3d; color: #fff; }
+  .brand img { width: 34px; height: 34px; }
+  .brand b { font-size: 15px; display: block; line-height: 1.15; }
+  .brand small { font-size: 11px; opacity: .85; }
+  .brand .grow { flex: 1; }
+  #editToggle { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.4); color: #fff; border-radius: 8px; padding: 6px 9px; font-size: 12px; cursor: pointer; }
+  #editToggle.on { background: #ffd54a; color: #333; border-color: #ffd54a; font-weight: 700; }
+  .searchbar { padding: 12px 14px 6px; }
+  .searchrow { display: flex; gap: 8px; }
+  #q { flex: 1; padding: 11px 12px; border: 1px solid #c4d6c6; border-radius: 10px; font-size: 15px; outline: none; }
+  #q:focus { border-color: #1f7a3d; box-shadow: 0 0 0 3px rgba(31,122,61,.12); }
+  #gpsBtn, #satBtn, #pickBtn, #homeBtn, #recenterBtn { border: 1px solid #c4d6c6; background: #fff; border-radius: 10px; padding: 0 10px; cursor: pointer; font-size: 16px; }
+  #gpsBtn:hover, #satBtn:hover, #pickBtn:hover, #homeBtn:hover, #recenterBtn:hover { background: #eef5ef; }
+  #satBtn.on, #pickBtn.on, #gpsBtn.on { background: #1f7a3d; }
+  #satBtn.on, #pickBtn.on, #gpsBtn.on { color: #fff; }
+  .pmarker.approx { border-style: dashed; border-width: 2px; opacity: .9; }
+  .umarker.live { animation: umpulse 1.6s ease-in-out infinite; }
+  @keyframes umpulse { 0%,100% { box-shadow: 0 0 0 4px rgba(47,126,194,.30), 0 1px 4px rgba(0,0,0,.4); } 50% { box-shadow: 0 0 0 10px rgba(47,126,194,.12), 0 1px 4px rgba(0,0,0,.4); } }
+  @media (prefers-reduced-motion: reduce) { .umarker.live { animation: none; } }
+  #gpsStatus { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background: #1f7a3d; color: #fff; font-size: 12px; font-weight: 600; padding: 7px 13px; border-radius: 999px; box-shadow: 0 2px 8px rgba(0,0,0,.25); display: none; z-index: 5; max-width: 80%; text-align: center; }
+  #navbar { position: absolute; top: 12px; left: 12px; right: 12px; display: none; align-items: center; gap: 10px; background: #0e3d20; color: #fff; border-radius: 12px; padding: 10px 12px; box-shadow: 0 4px 16px rgba(0,0,0,.3); z-index: 6; }
+  #navbar.show { display: flex; }
+  .nav-info { flex: 1; min-width: 0; }
+  .nav-top { font-size: 15px; font-variant-numeric: tabular-nums; }
+  .nav-top b { font-size: 20px; }
+  .nav-dest { opacity: .85; font-size: 12.5px; }
+  .nav-next { font-size: 13px; margin-top: 3px; line-height: 1.35; color: #eafff1; }
+  .nav-ctrls { display: flex; gap: 6px; }
+  .nav-ctrls button { background: rgba(255,255,255,.18); border: none; color: #fff; width: 36px; height: 36px; border-radius: 9px; font-size: 16px; cursor: pointer; }
+  .nav-ctrls button:hover { background: rgba(255,255,255,.3); }
+  .destbtns { display: flex; flex-direction: column; gap: 8px; }
+  .btn.ghost { background: #eef5ef; color: #1c2b20; }
+  .hint { font-size: 11.5px; color: #6a7c6e; padding: 6px 14px 0; }
+  #chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 14px; }
+  .chip { border: 1.5px solid #ccc; background: #fff; border-radius: 999px; padding: 6px 11px; font-size: 12px; cursor: pointer; }
+  .chip:hover { background: #f0f7f1; }
+  #results { padding: 0 8px; }
+  .result { display: flex; align-items: center; gap: 10px; padding: 9px 8px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+  .result:hover { background: #e9f3ea; }
+  .rtag { font-size: 11px; font-weight: 700; color: #fff; background: #789; border-radius: 6px; padding: 3px 7px; min-width: 32px; text-align: center; }
+  .rtag.room { background: #e05a3a; } .rtag.alias { background: #2f7ec2; } .rtag.building { background: #1f7a3d; }
+  .noresult { padding: 10px 14px; font-size: 12.5px; color: #6a7c6e; }
+  #panel { flex: 1; overflow-y: auto; padding: 4px 14px 20px; }
+  .placeholder { color: #6a7c6e; font-size: 13.5px; padding: 20px 4px; line-height: 1.6; }
+  .dest-head { display: flex; gap: 12px; align-items: center; border-left: 4px solid; padding: 10px 12px; background: #fff; border-radius: 10px; margin-top: 8px; }
+  .dest-code { color: #fff; font-weight: 800; border-radius: 8px; padding: 8px 10px; font-size: 15px; }
+  .dest-name { font-weight: 700; font-size: 15px; }
+  .dest-sub { font-size: 12px; color: #6a7c6e; margin-top: 2px; }
+  .dest-info { font-size: 12.5px; color: #45564a; background: #eef5ef; border-radius: 8px; padding: 9px 11px; margin: 10px 0; line-height: 1.5; }
+  .route-meta { font-size: 13px; background: #fff7e6; border: 1px solid #f0dfb5; border-radius: 8px; padding: 8px 11px; }
+  ol.steps { list-style: none; margin: 12px 0; padding: 0; }
+  ol.steps li { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px dashed #dbe7dc; font-size: 13.5px; line-height: 1.45; }
+  .stepnum { flex: 0 0 26px; height: 26px; border-radius: 50%; background: #1f7a3d; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+  li.arrive .stepnum { background: #e05a3a; }
+  .btn { display: block; width: 100%; padding: 12px; border: none; border-radius: 10px; font-size: 14.5px; font-weight: 700; cursor: pointer; }
+  .btn.primary { background: #1f7a3d; color: #fff; }
+  .btn.primary:hover { background: #196332; }
+  /* Editor panel */
+  #editPanel { display: none; background: #fffdf3; border-bottom: 1px solid #f0dfb5; padding: 10px 14px; }
+  #editPanel .etitle { font-size: 12.5px; font-weight: 700; color: #9a7b1a; }
+  .tools { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+  .tool { border: 1px solid #d9c98a; background: #fff; border-radius: 8px; padding: 6px 9px; font-size: 12px; cursor: pointer; }
+  .tool.on { background: #ffd54a; border-color: #e0b800; font-weight: 700; }
+  #editHint { font-size: 11.5px; color: #6a7c6e; line-height: 1.4; min-height: 30px; }
+  #editStats { font-size: 11px; color: #9a7b1a; margin: 4px 0 8px; }
+  .erow { display: flex; gap: 8px; }
+  .erow .btn { padding: 9px; font-size: 13px; }
+  .mapwrap { flex: 1; position: relative; min-width: 0; }
+  #map { position: absolute; inset: 0; }
+  .bmarker { color: #fff; font-weight: 800; font-size: 12px; padding: 5px 8px; border-radius: 8px; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.35); cursor: pointer; white-space: nowrap; }
+  .bmarker.sel { outline: 3px solid #ffd54a; }
+  .pmarker { width: 13px; height: 13px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.4); cursor: pointer; }
+  .pmarker.sel { outline: 3px solid #ffd54a; }
+  .umarker { width: 18px; height: 18px; border-radius: 50%; background: #2f7ec2; border: 3px solid #fff; box-shadow: 0 0 0 4px rgba(47,126,194,.3), 0 1px 4px rgba(0,0,0,.4); }
+  .nhandle { width: 15px; height: 15px; border-radius: 50%; background: #ffd54a; border: 2px solid #7a5c00; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,.4); }
+  .nhandle.sel { outline: 3px solid #e05a3a; }
+  #indoor { position: fixed; inset: 0; background: rgba(20,30,22,.55); display: none; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
+  #indoor.show { display: flex; }
+  .indoor-card { background: #fff; border-radius: 14px; width: 440px; max-width: 100%; max-height: 92vh; overflow: auto; box-shadow: 0 12px 40px rgba(0,0,0,.4); }
+  .indoor-head { color: #fff; padding: 12px 14px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; }
+  .indoor-head button { background: rgba(255,255,255,.2); border: none; color: #fff; width: 30px; height: 30px; border-radius: 8px; font-size: 16px; cursor: pointer; }
+  .ftabs { display: flex; gap: 6px; flex-wrap: wrap; padding: 12px 14px 4px; }
+  .ftab { border: 1px solid #c4d6c6; background: #fff; border-radius: 8px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
+  .ftab.on { background: #1f7a3d; color: #fff; border-color: #1f7a3d; }
+  #fpwrap { padding: 8px 14px 18px; }
+  .fp-svg { background: #f8fbf8; border: 1px solid #e2ede3; border-radius: 10px; padding: 8px; }
+  .fp-guide { margin-top: 12px; font-size: 13.5px; line-height: 1.55; background: #fff7e6; border: 1px solid #f0dfb5; border-radius: 8px; padding: 10px 12px; }
+  .fp-note { font-size: 13px; color: #6a7c6e; padding: 16px 4px; }
+  @media (max-width: 780px) {
+    .app { flex-direction: column-reverse; }
+    .mapwrap { height: 42vh; flex: none; }
+    .sidebar { width: 100%; min-width: 0; flex: 1; border-right: none; border-top: 1px solid #dbe7dc; }
+  }
+</style>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="./icon.svg" alt="">
+      <div class="grow">
+        <b>NLU Wayfinder</b>
+        <small>Chỉ đường đi bộ · Campus ĐH Nông Lâm TP.HCM</small>
+      </div>
+      <button id="editToggle" title="Bật/tắt chế độ hiệu chỉnh toạ độ & lối đi">🛰️ Hiệu chỉnh</button>
+    </div>
+
+    <div id="editPanel">
+      <div class="etitle">✏️ Chế độ hiệu chỉnh (số hoá toạ độ thật + lối đi)</div>
+      <div class="tools">
+        <button class="tool on" data-tool="move">✋ Kéo</button>
+        <button class="tool" data-tool="addnode">＋ Node</button>
+        <button class="tool" data-tool="edge">🔗 Nối cạnh</button>
+        <button class="tool" data-tool="delnode">🗑 Xoá node</button>
+      </div>
+      <div id="editHint">Kéo marker toà nhà (chữ) và node lối đi (chấm) về đúng vị trí trên ảnh vệ tinh.</div>
+      <div id="editStats"></div>
+      <div class="erow">
+        <button id="exportBtn" class="btn primary">⬇ Xuất JSON</button>
+        <button id="resetBtn" class="btn" style="background:#f3e0e0;color:#8a2a2a">↺ Mặc định</button>
+      </div>
+    </div>
+
+    <div class="searchbar">
+      <div class="searchrow">
+        <input id="q" placeholder="Mã phòng (CT101, G01, 208…) hoặc tên phòng" autocomplete="off">
+        <button id="pickBtn" title="Chạm bản đồ để đặt điểm xuất phát">📌</button>
+        <button id="homeBtn" title="Xuất phát lại từ Cổng chính">⌂</button>
+        <button id="satBtn" title="Bật/tắt nền vệ tinh">🛰️</button>
+        <button id="recenterBtn" title="Về vị trí của tôi (định vị GPS)">◎</button>
+        <button id="gpsBtn" title="Định vị GPS – theo dõi vị trí đang đứng">📍</button>
+      </div>
+      <div class="hint">VD: <b>CT101</b>, <b>TV203</b>, <b>C102</b>, <b>G01</b>, <b>208</b>, <b>402</b>, "Phòng Đào tạo", "VP Hiệu trưởng", "Khoa CNTT"</div>
+    </div>
+    <div id="chips"></div>
+    <div id="results"></div>
+    <div id="panel">
+      <div class="placeholder">
+        👋 Chọn một <b>toà nhà</b> ở trên, hoặc gõ <b>mã phòng</b> để xem đường đi bộ và chỉ dẫn vào tận phòng.<br><br>
+        • Định tuyến chạy trên <b>mạng lối đi bộ tự dựng</b> (không phụ thuộc Google trong campus).<br>
+        • Nhấn <b>🛰️ Hiệu chỉnh</b> để kéo-thả đặt <b>toạ độ thật</b> 6 toà nhà và <b>số hoá lối đi</b> trên ảnh vệ tinh, rồi <b>Xuất JSON</b>.
+      </div>
+    </div>
+  </aside>
+  <div class="mapwrap"><div id="map"></div><div id="gpsStatus"></div>
+    <div id="navbar">
+      <div class="nav-info">
+        <div class="nav-top"><b id="navRemain">…</b> <span id="navEta"></span> <span id="navDestName" class="nav-dest"></span></div>
+        <div id="navNext" class="nav-next">Đang định vị…</div>
+      </div>
+      <div class="nav-ctrls">
+        <button id="navMute" title="Bật/tắt giọng nói">🔊</button>
+        <button id="navStop" title="Dừng điều hướng">✕</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="indoor"></div>
+
+<script src="./data.js?v=5"></script>
+<script src="./app.js?v=5"></script>

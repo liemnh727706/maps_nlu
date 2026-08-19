@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#1f7a3d"/>
+  <path d="M256 96c-70 0-126 55-126 123 0 92 126 197 126 197s126-105 126-197c0-68-56-123-126-123z" fill="#ffffff"/>
+  <circle cx="256" cy="219" r="52" fill="#1f7a3d"/>
+  <text x="256" y="238" font-family="Arial, sans-serif" font-size="60" font-weight="700" fill="#ffffff" text-anchor="middle">NL</text>
+</svg>

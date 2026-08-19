@@ -1,0 +1,210 @@
+<meta charset="utf-8">
+<title>NLU Wayfinder – Chỉ đường Campus Nông Lâm</title>
+<style>
+  :root{
+    --bg:#f5f8f4; --surface:#ffffff; --surface2:#eef3ec; --ink:#16241b; --muted:#5b6b5e;
+    --line:#dbe7dc; --brand:#1f7a3d; --brand-deep:#0e3d20; --route:#e0592f; --amber:#f0b429;
+    --mk-ring:#ffffff; --edge:#c4d5c6; --mapbg:#eaf1e8;
+    --fp-room:#eef4ee; --fp-line:#b9cdbc; --fp-hall:#dfe8df; --fp-ink:#22332a;
+    --shadow:0 1px 3px rgba(20,40,25,.12);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0e1712; --surface:#16241b; --surface2:#1c2f22; --ink:#e8f0ea; --muted:#9db3a4;
+      --line:#243a2c; --brand:#3aa564; --brand-deep:#0b3019; --route:#ff6f43; --amber:#f0b429;
+      --mk-ring:#16241b; --edge:#31493a; --mapbg:#101c15;
+      --fp-room:#1c2f22; --fp-line:#31493a; --fp-hall:#243a2c; --fp-ink:#dfe8df;
+      --shadow:0 1px 3px rgba(0,0,0,.4); }
+  }
+  :root[data-theme="light"]{ --bg:#f5f8f4; --surface:#ffffff; --surface2:#eef3ec; --ink:#16241b; --muted:#5b6b5e; --line:#dbe7dc; --brand:#1f7a3d; --brand-deep:#0e3d20; --route:#e0592f; --mk-ring:#ffffff; --edge:#c4d5c6; --mapbg:#eaf1e8; --fp-room:#eef4ee; --fp-line:#b9cdbc; --fp-hall:#dfe8df; --fp-ink:#22332a; }
+  :root[data-theme="dark"]{ --bg:#0e1712; --surface:#16241b; --surface2:#1c2f22; --ink:#e8f0ea; --muted:#9db3a4; --line:#243a2c; --brand:#3aa564; --brand-deep:#0b3019; --route:#ff6f43; --mk-ring:#16241b; --edge:#31493a; --mapbg:#101c15; --fp-room:#1c2f22; --fp-line:#31493a; --fp-hall:#243a2c; --fp-ink:#dfe8df; }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    -webkit-tap-highlight-color:transparent;}
+  b{font-weight:650}
+  .app{display:flex;height:100vh;height:100dvh}
+  /* Rail */
+  .rail{width:388px;min-width:388px;display:flex;flex-direction:column;background:var(--surface);border-right:1px solid var(--line)}
+  .brand{display:flex;align-items:center;gap:11px;padding:14px 16px;background:linear-gradient(135deg,var(--brand),var(--brand-deep));color:#fff}
+  .logo{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.16);display:grid;place-items:center;font-size:20px}
+  .brand b{font-size:15.5px;display:block;letter-spacing:.2px}
+  .brand small{font-size:11px;opacity:.85}
+  .brandbtn{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.38);color:#fff;border-radius:9px;padding:7px 9px;font-size:15px;cursor:pointer}
+  .brandbtn:hover{background:rgba(255,255,255,.3)}
+  .search{padding:13px 16px 8px}
+  .srow{display:flex;gap:8px}
+  #q{flex:1;min-width:0;padding:11px 13px;border:1px solid var(--line);border-radius:11px;font-size:15px;background:var(--surface);color:var(--ink);outline:none}
+  #q:focus{border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 18%,transparent)}
+  .iconbtn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:11px;width:44px;font-size:18px;cursor:pointer}
+  .iconbtn:hover{background:var(--surface2)}
+  .hint{font-size:11.5px;color:var(--muted);padding:7px 16px 0;line-height:1.5}
+  .hint b{color:var(--ink)}
+  #chips{display:flex;flex-wrap:wrap;gap:6px;padding:11px 16px}
+  .chip{border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 11px;font-size:12px;cursor:pointer}
+  .chip:hover{background:var(--surface2)}
+  #results{padding:0 10px}
+  .res{display:flex;align-items:center;gap:10px;padding:9px 8px;border-radius:9px;cursor:pointer;font-size:14px}
+  .res:hover{background:var(--surface2)}
+  .tag{font-size:11px;font-weight:700;color:#fff;background:#7c8c80;border-radius:6px;padding:3px 7px;min-width:34px;text-align:center;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .tag.room{background:var(--route)} .tag.alias{background:#2f7ec2} .tag.building{background:var(--brand)}
+  .nr{padding:10px 16px;font-size:12.5px;color:var(--muted)}
+  #panel{flex:1;overflow-y:auto;padding:6px 16px 22px}
+  .ph{color:var(--muted);font-size:13.5px;padding:18px 2px;line-height:1.65}
+  .ph b{color:var(--ink)}
+  .dh{display:flex;gap:12px;align-items:center;border-left:4px solid;padding:11px 13px;background:var(--surface2);border-radius:11px;margin-top:8px}
+  .dc{color:#fff;font-weight:800;border-radius:9px;padding:8px 11px;font-size:15px;font-family:ui-monospace,monospace}
+  .dn{font-weight:700;font-size:15px;line-height:1.25}
+  .ds{font-size:12px;color:var(--muted);margin-top:3px}
+  .di{font-size:12.5px;color:var(--muted);background:var(--surface2);border-radius:9px;padding:9px 12px;margin:11px 0;line-height:1.55}
+  .rm{font-size:13px;background:color-mix(in srgb,var(--amber) 16%,var(--surface));border:1px solid color-mix(in srgb,var(--amber) 40%,var(--line));border-radius:9px;padding:9px 12px;font-variant-numeric:tabular-nums}
+  ol.steps{list-style:none;margin:12px 0;padding:0}
+  ol.steps li{display:flex;gap:11px;padding:9px 0;border-bottom:1px dashed var(--line);font-size:13.5px;line-height:1.45}
+  .sn{flex:0 0 26px;height:26px;border-radius:50%;background:var(--brand);color:#fff;display:grid;place-items:center;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+  li.arr .sn{background:var(--route)}
+  .btn{display:block;width:100%;padding:12px;border:none;border-radius:11px;font-size:14.5px;font-weight:700;cursor:pointer}
+  .btn.primary{background:var(--brand);color:#fff}
+  .btn.primary:hover{background:var(--brand-deep)}
+  .fp-note{font-size:12.5px;color:var(--muted);padding:12px 2px;line-height:1.5}
+  /* Map */
+  .mapwrap{flex:1;position:relative;background:var(--mapbg);min-width:0}
+  #map{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+  #map:active{cursor:grabbing}
+  #map.picking{cursor:crosshair}
+  .mk.approx{stroke-dasharray:2.4 2;opacity:.9}
+  #usermk{fill:#2f7ec2;stroke:#fff}
+  #gpsdot{fill:#2f7ec2;stroke:#fff}
+  #gpsacc{fill:rgba(47,126,194,.16);stroke:rgba(47,126,194,.5);stroke-width:1;vector-effect:non-scaling-stroke}
+  #gpshead{fill:#2f7ec2;stroke:#fff;stroke-width:.6}
+  #gpsacc.live{animation:gpspulse 2.4s ease-in-out infinite}
+  @keyframes gpspulse{0%,100%{opacity:.45}50%{opacity:.18}}
+  @media (prefers-reduced-motion:reduce){#gpsacc.live{animation:none}}
+  .gpsstat{position:absolute;top:12px;left:50%;transform:translateX(-50%);max-width:82%;background:var(--brand);color:#fff;font-size:12px;font-weight:600;padding:7px 13px;border-radius:999px;box-shadow:var(--shadow);display:none;text-align:center}
+  .navbar{position:absolute;top:12px;left:12px;right:12px;display:none;align-items:center;gap:10px;background:var(--brand-deep);color:#fff;border-radius:12px;padding:10px 12px;box-shadow:0 4px 16px rgba(0,0,0,.3)}
+  .navbar.show{display:flex}
+  .nav-info{flex:1;min-width:0}
+  .nav-top{font-size:15px;font-variant-numeric:tabular-nums}
+  .nav-top b{font-size:20px}
+  .nav-dest{opacity:.85;font-size:12.5px}
+  .nav-next{font-size:13px;margin-top:3px;line-height:1.35;color:#eafff1}
+  .nav-ctrls{display:flex;gap:6px}
+  .nav-ctrls button{background:rgba(255,255,255,.18);border:none;color:#fff;width:36px;height:36px;border-radius:9px;font-size:16px;cursor:pointer}
+  .nav-ctrls button:hover{background:rgba(255,255,255,.3)}
+  .destbtns{display:flex;flex-direction:column;gap:8px}
+  #edges{stroke:var(--edge);stroke-width:1.4;fill:none;vector-effect:non-scaling-stroke;stroke-linecap:round}
+  #route{stroke:var(--route);stroke-width:5;fill:none;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;filter:drop-shadow(0 1px 2px rgba(224,89,47,.4))}
+  .mk{cursor:pointer}
+  .mk.det{filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))}
+  .mk.sel{stroke:var(--amber);stroke-width:3.5}
+  .mklab{fill:#fff;font-weight:800;font-family:ui-monospace,monospace;pointer-events:auto;cursor:pointer;dominant-baseline:middle}
+  #usermk{fill:#2f7ec2;stroke:#fff}
+  .mapctl{position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:6px}
+  .mapctl button{width:38px;height:38px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;font-size:17px;cursor:pointer;box-shadow:var(--shadow)}
+  .mapctl button:hover{background:var(--surface2)}
+  .mapctl button.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .maplegend{position:absolute;left:12px;bottom:12px;background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--line);border-radius:9px;padding:7px 10px;font-size:11px;color:var(--muted);line-height:1.5;max-width:220px;backdrop-filter:blur(3px)}
+  .maplegend b{color:var(--ink)}
+  .attrib{position:absolute;right:10px;bottom:8px;font-size:10px;color:var(--muted);background:color-mix(in srgb,var(--surface) 80%,transparent);padding:2px 6px;border-radius:6px}
+  /* Indoor modal */
+  #indoor{position:fixed;inset:0;background:rgba(10,20,14,.55);display:none;align-items:center;justify-content:center;z-index:60;padding:16px}
+  #indoor.show{display:flex}
+  .indoor-card{background:var(--surface);border-radius:15px;width:440px;max-width:100%;max-height:92vh;overflow:auto;box-shadow:0 16px 48px rgba(0,0,0,.45)}
+  .indoor-head{color:#fff;padding:13px 15px;font-weight:700;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0}
+  .indoor-head button{background:rgba(255,255,255,.22);border:none;color:#fff;width:30px;height:30px;border-radius:8px;font-size:16px;cursor:pointer}
+  .ftabs{display:flex;gap:6px;flex-wrap:wrap;padding:13px 15px 4px}
+  .ftab{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer}
+  .ftab.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+  #fpwrap{padding:8px 15px 18px}
+  .fp-svg{background:var(--surface2);border:1px solid var(--line);border-radius:11px;padding:8px}
+  .fp-guide{margin-top:12px;font-size:13.5px;line-height:1.55;background:color-mix(in srgb,var(--amber) 15%,var(--surface));border:1px solid color-mix(in srgb,var(--amber) 38%,var(--line));border-radius:9px;padding:10px 12px}
+  /* Share + QR */
+  #share{position:fixed;inset:0;background:rgba(10,20,14,.55);display:none;align-items:center;justify-content:center;z-index:70;padding:16px}
+  #share.show{display:flex}
+  .share-card{background:var(--surface);border-radius:15px;width:340px;max-width:100%;box-shadow:0 16px 48px rgba(0,0,0,.45);overflow:hidden}
+  .share-head{background:var(--brand);color:#fff;padding:13px 15px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
+  .share-head button{background:rgba(255,255,255,.22);border:none;color:#fff;width:30px;height:30px;border-radius:8px;font-size:16px;cursor:pointer}
+  .share-body{padding:16px;text-align:center}
+  .share-body p{margin:0 0 13px;font-size:13px;color:var(--muted)}
+  .qrbox{background:#fff;display:inline-block;padding:10px;border-radius:12px;box-shadow:var(--shadow)}
+  .qr{width:210px;height:210px;display:block;image-rendering:pixelated}
+  .share-url{margin:13px 0;font-size:12px;color:var(--muted);word-break:break-all;background:var(--surface2);border-radius:8px;padding:8px 10px}
+  .share-actions{display:flex;gap:8px}
+  .btn.ghost{background:var(--surface2);color:var(--ink)}
+  @media (max-width:780px){
+    .app{flex-direction:column-reverse;height:auto;min-height:100dvh}
+    .mapwrap{height:52dvh;flex:none}
+    .rail{width:100%;min-width:0;border-right:none;border-bottom:1px solid var(--line)}
+    #panel{max-height:none}
+  }
+  @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+
+<div class="app">
+  <aside class="rail">
+    <div class="brand">
+      <div class="logo">🧭</div>
+      <div style="flex:1">
+        <b>NLU Wayfinder</b>
+        <small>Chỉ đường đi bộ · Campus ĐH Nông Lâm TP.HCM</small>
+      </div>
+      <button id="shareBtn" class="brandbtn" title="Chia sẻ · mã QR">📤</button>
+    </div>
+    <div class="search">
+      <div class="srow">
+        <input id="q" placeholder="Mã phòng (CT101, G01, 208…) hoặc tên phòng" autocomplete="off">
+        <button id="gpsBtn" class="iconbtn" title="Định vị GPS – theo dõi vị trí đang đứng">📍</button>
+      </div>
+      <div class="hint">VD: <b>CT101</b>, <b>TV203</b>, <b>G01</b>, <b>208</b>, <b>402</b>, "Phòng Đào tạo", "VP Hiệu trưởng", "Thư viện", "Cư xá A"</div>
+    </div>
+    <div id="chips"></div>
+    <div id="results"></div>
+    <div id="panel">
+      <div class="ph">
+        👋 Chọn một <b>giảng đường</b> ở trên, hoặc gõ <b>mã phòng / tên phòng</b> để xem đường đi bộ và chỉ dẫn vào tận phòng.<br><br>
+        • Bản đồ dựng từ <b>toạ độ thật (OpenStreetMap)</b>; định tuyến chạy trên <b>mạng lối đi bộ trong campus</b>.<br>
+        <b>Cách dùng nhanh:</b> bấm <b>📍</b> để <b>định vị vị trí bạn đang đứng</b> (chấm xanh + mũi tên hướng), rồi <b>chọn điểm đến</b> — bản đồ chỉ đường từ chỗ bạn và <b>tự bám theo khi bạn đi</b>.<br>
+        • <b>◎</b> về vị trí của tôi · <b>📌</b> đặt điểm xuất phát bằng tay · <b>⌂</b> về cổng · kéo/chụm để xem bản đồ.
+      </div>
+    </div>
+  </aside>
+
+  <div class="mapwrap">
+    <svg id="map" xmlns="http://www.w3.org/2000/svg">
+      <path id="edges" d=""></path>
+      <g id="markers"></g>
+      <path id="route" d=""></path>
+      <circle id="gpsacc" r="0" cx="0" cy="0" opacity="0"></circle>
+      <circle id="usermk" r="6" cx="0" cy="0" opacity="0"></circle>
+      <path id="gpshead" d="M0 -23 L8 -5 L0 -10 L-8 -5 Z" opacity="0"></path>
+      <circle id="gpsdot" r="0" cx="0" cy="0" opacity="0"></circle>
+    </svg>
+    <div id="gpsStatus" class="gpsstat"></div>
+    <div id="navbar" class="navbar">
+      <div class="nav-info">
+        <div class="nav-top"><b id="navRemain">…</b> <span id="navEta"></span> <span id="navDestName" class="nav-dest"></span></div>
+        <div id="navNext" class="nav-next">Đang định vị…</div>
+      </div>
+      <div class="nav-ctrls">
+        <button id="navMute" title="Bật/tắt giọng nói">🔊</button>
+        <button id="navStop" title="Dừng điều hướng">✕</button>
+      </div>
+    </div>
+    <div class="mapctl">
+      <button id="zin" title="Phóng to" aria-label="Phóng to">＋</button>
+      <button id="zout" title="Thu nhỏ" aria-label="Thu nhỏ">−</button>
+      <button id="fitBtn" title="Toàn cảnh" aria-label="Toàn cảnh">⤢</button>
+      <button id="recenterBtn" title="Về vị trí của tôi (định vị GPS)" aria-label="Về vị trí của tôi">◎</button>
+      <button id="pickBtn" title="Chạm bản đồ để đặt điểm xuất phát" aria-label="Đặt điểm xuất phát">📌</button>
+      <button id="homeBtn" title="Xuất phát lại từ Cổng chính" aria-label="Về cổng chính">⌂</button>
+    </div>
+    <div class="maplegend">🟢 <b>Giảng đường</b> (bấm để chỉ đường) · chấm màu = <b>tiện ích / khoa / cư xá</b> · vòng nét đứt = <b>vị trí ước lượng</b> · <span style="color:var(--route)"><b>━</b> tuyến</span><br><b>📌</b> chạm bản đồ để đặt nơi bạn đang đứng · <b>⌂</b> về cổng</div>
+    <div class="attrib">Dữ liệu: © OpenStreetMap</div>
+  </div>
+</div>
+<div id="indoor"></div>
+<div id="share"></div>
+
+<script>/*__DATA__*/</script>
+<script>/*__QRLIB__*/</script>
+<script>/*__APP__*/</script>
