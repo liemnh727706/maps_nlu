@@ -36,6 +36,9 @@ Artifact: mở thẳng `NLU-Wayfinder-Campus.html` bằng trình duyệt (hoặc
 > **GitHub Pages**: bật Pages cho repo (nhánh `main`, thư mục gốc) là có ngay bản web tại
 > `https://<user>.github.io/maps_nlu/`. GPS/la bàn cần HTTPS — Pages đáp ứng.
 
+> **Chạy chung một tên miền sẵn có** (vd `/maps` của một site nginx/Apache trên Oracle Cloud):
+> xem hướng dẫn chi tiết trong [`DEPLOY.md`](DEPLOY.md).
+
 ## Cấu trúc
 ```
 index.html app.js data.js sw.js manifest.webmanifest icon.svg   # web app (MapLibre)
