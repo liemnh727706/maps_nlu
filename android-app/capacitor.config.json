@@ -1,0 +1,8 @@
+{
+  "appId": "vn.edu.hcmuaf.nlu.wayfinder",
+  "appName": "NLU Wayfinder",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}

@@ -58,6 +58,31 @@ python build/build_artifact.py  # ghép lại NLU-Wayfinder-Campus.html
 Cập nhật mạng đường: chạy truy vấn trong `build/overpass/roads.ql` trên Overpass API rồi lưu
 kết quả vào `build/osm_roads.json`.
 
+## Đóng gói APK Android
+App được bọc bằng **Capacitor** (WebView) từ **bản artifact offline** (`NLU-Wayfinder-Campus.html`),
+nên APK **chạy hoàn toàn offline**: bản đồ SVG, định vị GPS, la bàn, điều hướng "Bắt đầu đi" đều hoạt động.
+
+**Cách lấy APK (không cần cài Android SDK):**
+1. Lên GitHub → tab **Actions** → workflow **Build Android APK** → **Run workflow** (hoặc mỗi lần push `main` sẽ tự build).
+2. Mở lần chạy vừa xong → mục **Artifacts** → tải **`NLU-Wayfinder-apk`** (file `NLU-Wayfinder.apk`).
+   - Khi bấm **Run workflow** thủ công, APK còn được đính vào **Release** `apk-latest`.
+3. Trên điện thoại Android: bật *Cài đặt từ nguồn không xác định* rồi mở file `.apk` để cài.
+
+Lần đầu mở app sẽ hỏi **quyền Vị trí** → chọn *Cho phép* để dùng GPS/la bàn.
+
+**Build tại máy (nếu có Android SDK):**
+```bash
+cd android-app
+npm install
+node prepare.mjs          # tạo www/index.html từ artifact
+npx cap add android
+npx cap sync android
+node patch-manifest.mjs    # thêm quyền Vị trí
+cd android && ./gradlew assembleDebug
+# APK: android-app/android/app/build/outputs/apk/debug/app-debug.apk
+```
+> APK hiện là bản **debug** (đủ để cài & dùng). Muốn bản **release ký số** để phát rộng, thêm keystore + cấu hình ký (có thể bổ sung sau).
+
 ## Giấy phép & ghi công
 - **Dữ liệu bản đồ:** © OpenStreetMap contributors, giấy phép **ODbL**.
 - Thư viện QR nhúng sẵn: `qrcode-generator` (MIT).
