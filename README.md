@@ -81,7 +81,33 @@ node patch-manifest.mjs    # thêm quyền Vị trí
 cd android && ./gradlew assembleDebug
 # APK: android-app/android/app/build/outputs/apk/debug/app-debug.apk
 ```
-> APK hiện là bản **debug** (đủ để cài & dùng). Muốn bản **release ký số** để phát rộng, thêm keystore + cấu hình ký (có thể bổ sung sau).
+### Ký số bản RELEASE để phát rộng
+Workflow tự động build **release đã ký** khi repo có đủ keystore trong **GitHub Secrets** (nếu chưa có thì build debug).
+
+**B1. Tạo keystore** (chạy ở máy bạn — tự đặt & GHI NHỚ mật khẩu, KHÔNG chia sẻ):
+```bash
+keytool -genkeypair -v -keystore nlu-release.keystore -alias nlu \
+  -keyalg RSA -keysize 2048 -validity 10000
+```
+> Giữ file `nlu-release.keystore` an toàn: **mất nó = không cập nhật app được nữa**; lộ nó = người khác ký giả app.
+
+**B2. Mã hoá base64 để đưa vào Secret:**
+```bash
+base64 -w0 nlu-release.keystore > keystore.b64      # Linux/Git-Bash
+# Windows PowerShell: [Convert]::ToBase64String([IO.File]::ReadAllBytes("nlu-release.keystore")) > keystore.b64
+```
+
+**B3. Thêm 4 Secrets** trong GitHub: repo → *Settings → Secrets and variables → Actions → New repository secret*:
+| Secret | Giá trị |
+|---|---|
+| `KEYSTORE_BASE64` | nội dung file `keystore.b64` |
+| `KEYSTORE_PASSWORD` | mật khẩu **store** đã đặt ở B1 |
+| `KEY_ALIAS` | `nlu` (alias ở B1) |
+| `KEY_PASSWORD` | mật khẩu **key** (thường trùng store) |
+
+**B4.** Vào **Actions → Build Android APK → Run workflow**. Có secrets → ra **APK release đã ký** trong Artifacts/Release.
+
+> ⚠️ Chỉ đặt keystore/mật khẩu trong **GitHub Secrets** (mã hoá, không lộ trong log). **Không** commit keystore vào repo. Muốn đưa lên Google Play, cân nhắc bật **Play App Signing**.
 
 ## Giấy phép & ghi công
 - **Dữ liệu bản đồ:** © OpenStreetMap contributors, giấy phép **ODbL**.
