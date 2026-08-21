@@ -19,8 +19,8 @@ const prelude =
   'if(G&&G.requestPermissions)G.requestPermissions().catch(function(){});' +
   '}catch(e){}});</script>';
 
-if (/<meta charset=["']utf-8["']>/i.test(html)) {
-  html = html.replace(/(<meta charset=["']utf-8["']>)/i, '$1' + prelude);
+if (/<\/title>/i.test(html)) {
+  html = html.replace(/(<\/title>)/i, '$1' + prelude);   // sau CSP + title
 } else {
   html = prelude + html;
 }

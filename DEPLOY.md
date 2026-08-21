@@ -19,7 +19,20 @@ Quyền mặc định của git (thư mục `755`, file `644`, owner `root`) là
 location ^~ /maps/ {
     alias /var/www/maps_nlu/;
     try_files $uri $uri/index.html =404;
-    add_header Permissions-Policy "geolocation=(self)" always;
+
+    # --- Bảo mật (add_header ở location THAY THẾ toàn bộ header kế thừa -> khai báo đủ) ---
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://tile.openstreetmap.org https://server.arcgisonline.com; connect-src 'self' https://tile.openstreetmap.org https://server.arcgisonline.com; worker-src 'self' blob:; manifest-src 'self'; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "geolocation=(self), camera=(), microphone=()" always;   # GPS cho /maps, tắt camera/mic
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Cross-Origin-Opener-Policy "same-origin" always;
+    add_header Cache-Control "public, max-age=600" always;                                  # SW lo cache chính; ?v busting
+
+    # --- Hiệu năng: nén (giảm ~4x cho JS) ---
+    gzip on;
+    gzip_types text/css application/javascript application/json application/manifest+json image/svg+xml;
+    gzip_min_length 1024;
 }
 ```
 Kiểm tra & nạp lại:
@@ -63,6 +76,21 @@ Không cần đụng lại nginx. Bản web đã version-hoá tài nguyên `?v=N
 | `/maps/icon.svg` (hoặc .css) bị đẩy sang app khác / 404 | Thiếu `^~`. Đổi `location /maps/` → `location ^~ /maps/`. |
 | 403 Forbidden | Quyền file, hoặc **SELinux** (Oracle Linux/RHEL): `sudo semanage fcontext -a -t httpd_sys_content_t "/var/www/maps_nlu(/.*)?" && sudo restorecon -Rv /var/www/maps_nlu`. (Ubuntu không cần.) |
 | `nginx -t` OK nhưng không đổi | `nginx -t` chỉ kiểm tra; phải `sudo systemctl reload nginx` để áp dụng. |
+
+## Bảo mật & hiệu năng
+Ứng dụng là **web tĩnh, không backend/CSDL/đăng nhập** nên bề mặt tấn công nhỏ. Đã hardening:
+- **Không phụ thuộc CDN bên thứ ba**: MapLibre được **self-host** (`vendor/`) — loại rủi ro chuỗi
+  cung ứng (unpkg bị chiếm), tải nhanh & chạy cả khi CDN lỗi. CSP `script-src 'self'` (chỉ chạy JS nội bộ).
+- **CSP + security headers**: đặt ở meta trong `index.html` và **bắt buộc ở HTTP header nginx**
+  (`frame-ancestors` chỉ có tác dụng qua header). Chỉ cho kết nối tới host cần thiết
+  (tile OSM/Esri), chặn khung nhúng (clickjacking), `nosniff`, `Referrer-Policy`, tắt camera/mic.
+- **Bản artifact/APK** offline có CSP riêng **không cho phép mọi nguồn ngoài** (`connect-src 'self'`).
+- **HTTPS bắt buộc** (đã có theo tên miền) → GPS/la bàn hoạt động; nên bật **HSTS ở cấp server**
+  cho cả `el-nnth.hcmuaf.edu.vn` (nếu chưa): `add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;` (đặt ở khối server, không chỉ /maps).
+- **Hiệu năng**: Service Worker cache-first cho tài nguyên tĩnh (lần 2 tải tức thì), network-first
+  cho `index.html`; bật `gzip`; tài nguyên version-hoá `?v=` để cache dài mà vẫn cập nhật đúng.
+- **Bảo trì**: thỉnh thoảng cập nhật MapLibre (`vendor/`) lên bản vá mới; theo dõi cảnh báo bảo mật
+  của Capacitor (`npm audit` trong `android-app/`).
 
 ## Về Oracle Cloud
 Vì dùng lại cổng **443** của site sẵn có: **không** cần đổi Security List/NSG của VCN, **không** cần

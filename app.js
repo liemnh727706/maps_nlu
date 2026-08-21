@@ -218,7 +218,6 @@ function initMap() {
     container: 'map',
     style: {
       version: 8,
-      glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
       sources: {
         osm: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© OpenStreetMap' },
         sat: { type: 'raster', tiles: [SAT_TILES], tileSize: 256, attribution: 'Imagery © Esri, Maxar' }
