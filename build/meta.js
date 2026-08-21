@@ -66,11 +66,8 @@ const BUILDINGS = {
   COMAY: { name: 'KTX Cỏ May', color: '#8a6d3b', poi: true, cat: 'Ký túc xá', info: 'Ký túc xá Cỏ May.' },
 
   /* --- Ăn uống / tiện ích --- */
-  MIMOSA:{ name: 'Nhà hàng Mimosa', color: '#e07b39', poi: true, cat: 'Ăn uống', info: 'Nhà hàng trong khuôn viên trường.' },
   CANTIN:{ name: 'Căn tin Ký túc xá', color: '#e07b39', poi: true, cat: 'Ăn uống', info: 'Căn tin khu KTX.' },
   HOIQUAN:{ name: 'Hội Quán Nông Lâm', color: '#e07b39', poi: true, cat: 'Ăn uống', info: 'Hội quán – khu ẩm thực / sinh hoạt.' },
-  CAFE1: { name: 'Feel Coffee & Tea Express', color: '#e07b39', poi: true, cat: 'Ăn uống', info: 'Quán cà phê trong trường.' },
-  CAFE2: { name: 'An Tea & Coffee', color: '#e07b39', poi: true, cat: 'Ăn uống', info: 'Quán trà – cà phê trong trường.' },
   ATM:   { name: 'ATM BIDV', color: '#5a6b7a', poi: true, cat: 'Tiện ích', info: 'Máy ATM BIDV trong trường.' },
 
   /* --- Thể thao / cảnh quan --- */
@@ -98,12 +95,9 @@ const BUILDINGS = {
   BAIOTO:{ name: 'Bãi đỗ ô tô', color: '#777777', poi: true, cat: 'Bãi xe', info: 'Bãi đỗ ô tô.' },
 
   /* --- Hạng mục CHƯA có toạ độ thật (vị trí ƯỚC LƯỢNG, cần tinh chỉnh) --- */
-  T12:      { name: 'Giảng đường T1 – T2', color: '#b08968', poi: true, cat: 'Giảng đường', approx: true, info: '⚠ Vị trí ước lượng – hãy tinh chỉnh bằng Chế độ hiệu chỉnh.' },
   CNTY:     { name: 'Trại thực nghiệm Chăn nuôi – Thú y', color: '#b08968', poi: true, cat: 'Thực nghiệm', approx: true, info: '⚠ Vị trí ước lượng.' },
-  NANGLUONG:{ name: 'TT Năng lượng & Máy Nông nghiệp', color: '#b08968', poi: true, cat: 'Trung tâm', approx: true, info: '⚠ Vị trí ước lượng.' },
   OTOCK:    { name: 'Xưởng thực tập Cơ khí Ô tô – Công thôn', color: '#b08968', poi: true, cat: 'Thực nghiệm', approx: true, info: '⚠ Vị trí ước lượng.' },
-  UOMTAO:   { name: 'TT Ươm tạo Doanh nghiệp Công nghệ', color: '#b08968', poi: true, cat: 'Trung tâm', approx: true, info: '⚠ Vị trí ước lượng.' },
-  BOIDUONG: { name: 'TT Bồi dưỡng kiến thức', color: '#b08968', poi: true, cat: 'Trung tâm', approx: true, info: '⚠ Vị trí ước lượng.' }
+  UOMTAO:   { name: 'TT Ươm tạo Doanh nghiệp Công nghệ', color: '#b08968', poi: true, cat: 'Trung tâm', approx: true, info: '⚠ Vị trí ước lượng.' }
 };
 
 // Prefix mã phòng có chữ cái (khớp DÀI trước)
@@ -158,6 +152,5 @@ const ALIASES = [
   { q: 'biến đổi khí hậu', b: 'RD', floor: 3, room: 'P304B', label: 'TT NC Biến đổi khí hậu (P304B)' },
   { q: 'trạm y tế', b: 'YTE', label: 'Trạm y tế' },
   { q: 'bệnh viện thú y', b: 'THUYY', label: 'Bệnh viện Thú Y NLU' },
-  { q: 'giữ xe', b: 'BAIXE1', label: 'Bãi giữ xe sinh viên' },
-  { q: 'cà phê', b: 'CAFE1', label: 'Quán cà phê trong trường' }
+  { q: 'giữ xe', b: 'BAIXE1', label: 'Bãi giữ xe sinh viên' }
 ];

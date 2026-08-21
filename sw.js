@@ -1,5 +1,5 @@
 /* Service worker – app-shell cache cho PWA demo NLU Wayfinder */
-const CACHE = 'nlu-wayfinder-v6';
+const CACHE = 'nlu-wayfinder-v7';
 const SHELL = [
   './',
   './index.html',
