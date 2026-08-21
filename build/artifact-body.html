@@ -98,6 +98,9 @@
   .mk.det{filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))}
   .mk.sel{stroke:var(--amber);stroke-width:3.5}
   .mklab{fill:#fff;font-weight:800;font-family:ui-monospace,monospace;pointer-events:auto;cursor:pointer;dominant-baseline:middle}
+  .mklab2{fill:var(--ink);text-anchor:middle;dominant-baseline:hanging;font-weight:600;pointer-events:none;stroke:var(--surface);stroke-width:3;paint-order:stroke;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+  .mklab2.sel{fill:var(--route)}
+  .stlab{fill:var(--muted);text-anchor:middle;dominant-baseline:middle;font-weight:600;pointer-events:none;stroke:var(--mapbg);stroke-width:3;paint-order:stroke;stroke-linejoin:round;vector-effect:non-scaling-stroke;letter-spacing:.3px}
   #usermk{fill:#2f7ec2;stroke:#fff}
   .mapctl{position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:6px}
   .mapctl button{width:38px;height:38px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;font-size:17px;cursor:pointer;box-shadow:var(--shadow)}
@@ -172,8 +175,10 @@
   <div class="mapwrap">
     <svg id="map" xmlns="http://www.w3.org/2000/svg">
       <path id="edges" d=""></path>
+      <g id="g-streets"></g>
       <g id="markers"></g>
       <path id="route" d=""></path>
+      <g id="g-labels"></g>
       <circle id="gpsacc" r="0" cx="0" cy="0" opacity="0"></circle>
       <circle id="usermk" r="6" cx="0" cy="0" opacity="0"></circle>
       <path id="gpshead" d="M0 -23 L8 -5 L0 -10 L-8 -5 Z" opacity="0"></path>

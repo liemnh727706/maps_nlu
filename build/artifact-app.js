@@ -90,6 +90,12 @@ function openIndoor(dest) {
 
 /* ---- Bản đồ SVG (chiếu toạ độ thật sang lưới mét) ---- */
 let PROJ, WORLD, VB, svgEl, markers = {}, currentDest = null, currentStart = 'START';
+let placeLabels = {}, streetEls = [], lastLabelScale = -1;
+function shortLabel(s) {
+  return s.replace('Giảng đường', 'GĐ').replace('Trung tâm', 'TT').replace('Ký túc xá', 'KTX')
+    .replace('Bãi giữ xe', 'Bãi xe').replace('Văn phòng', 'VP').replace('Nhà điều hành', 'Nhà ĐH')
+    .replace(/\s*\(.*?\)\s*/g, ' ').replace(/\s+/g, ' ').trim();
+}
 let startLabel = NODE_LABEL.START, pickStart = false, tapMoved = false;
 let gpsActive = false, gpsWatch = null, gpsPos = null, firstFix = false;
 let gpsHeading = null, headingHandler = null, gpsXY = null, followMode = false;
@@ -113,6 +119,7 @@ function restyle() {
   const u = document.getElementById('usermk'); if (u) { u.setAttribute('r', 6 / scale); u.setAttribute('stroke-width', 2.5 / scale); }
   const gd = document.getElementById('gpsdot'); if (gd) { gd.setAttribute('r', 6.5 / scale); gd.setAttribute('stroke-width', 3 / scale); }
   placeGpsMarker();
+  if (Math.abs(scale - lastLabelScale) > 1e-9) { lastLabelScale = scale; styleLabels(scale); }
 }
 function renderBase() {
   let ed = '';
@@ -130,6 +137,40 @@ function renderBase() {
     if (det) { t = document.createElementNS('http://www.w3.org/2000/svg', 'text'); t.setAttribute('x', x); t.setAttribute('y', y); t.setAttribute('text-anchor', 'middle'); t.setAttribute('class', 'mklab'); t.textContent = bk; t.addEventListener('click', e => { e.stopPropagation(); selectDest({ b: bk }); }); g.appendChild(t); }
     markers[bk] = { c, t };
   }
+  // Nhãn tên địa điểm (dưới marker)
+  const gl = document.getElementById('g-labels'); gl.innerHTML = ''; placeLabels = {};
+  for (const bk of order) {
+    const tx = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    tx.setAttribute('class', 'mklab2'); tx.textContent = shortLabel(BUILDINGS[bk].name);
+    tx.addEventListener('click', e => { e.stopPropagation(); selectDest({ b: bk }); });
+    gl.appendChild(tx); placeLabels[bk] = tx;
+  }
+  // Nhãn tên đường
+  const gs = document.getElementById('g-streets'); gs.innerHTML = ''; streetEls = [];
+  if (typeof STREETS !== 'undefined') for (const s of STREETS) {
+    const tx = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    tx.setAttribute('class', 'stlab'); tx.textContent = s.n;
+    gs.appendChild(tx); streetEls.push({ el: tx, a: s.a, b: s.b });
+  }
+  lastLabelScale = -1;
+}
+function styleLabels(scale) {
+  const fs = 12 / scale;
+  const showPOI = scale >= 1.5, showStreet = scale >= 1.15;
+  for (const bk in placeLabels) {
+    const L = placeLabels[bk], [x, y] = P(NODES[bk]);
+    L.setAttribute('x', x); L.setAttribute('y', y + (isDetailed(bk) ? 10 : 7) / scale);
+    L.setAttribute('font-size', fs + 'px');
+    const on = isDetailed(bk) || showPOI || (currentDest && currentDest.b === bk);
+    L.style.display = on ? '' : 'none';
+  }
+  for (const s of streetEls) {
+    const [ax, ay] = P(s.a), [bx, by] = P(s.b); let ang = Math.atan2(by - ay, bx - ax) * 180 / Math.PI;
+    if (ang > 90) ang -= 180; else if (ang < -90) ang += 180;
+    s.el.setAttribute('font-size', (11 / scale) + 'px');
+    s.el.setAttribute('transform', `translate(${(ax + bx) / 2} ${(ay + by) / 2}) rotate(${ang})`);
+    s.el.style.display = showStreet ? '' : 'none';
+  }
 }
 function setUser(id) { if (gpsActive) { document.getElementById('usermk').setAttribute('opacity', 0); return; } const [x, y] = P(NODES[id]); const u = document.getElementById('usermk'); u.setAttribute('cx', x); u.setAttribute('cy', y); u.setAttribute('opacity', 1); }
 function drawRoute(path) { let d = ''; path.forEach((id, i) => { const [x, y] = P(NODES[id]); d += (i ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1); }); document.getElementById('route').setAttribute('d', d); }
@@ -143,6 +184,7 @@ function selectDest(dest) {
   currentDest = dest; const B = BUILDINGS[dest.b], r = dijkstra(currentStart, dest.b);
   document.getElementById('results').innerHTML = ''; document.getElementById('q').value = '';
   for (const bk in markers) markers[bk].c.classList.toggle('sel', bk === dest.b);
+  for (const bk in placeLabels) { placeLabels[bk].classList.toggle('sel', bk === dest.b); if (bk === dest.b) placeLabels[bk].style.display = ''; }
   if (!r) { document.getElementById('panel').innerHTML = '<div class="ph">Không tìm được đường tới điểm này.</div>'; return; }
   drawRoute(r.path); setUser(currentStart); if (!(gpsActive && followMode)) fitRoute(r.path);
   const { steps, total } = buildSteps(r.path), mins = Math.max(1, Math.round(total / 1.35 / 60));

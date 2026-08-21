@@ -143,6 +143,33 @@ for t in ['PV', 'TL', 'HD', 'CT']:
     r = dij('START', t)
     print('START ->', t, ':', None if r is None else round(r), 'm')
 
+# --- Nhãn tên đường (từ OSM) — chọn đoạn giữa của con đường gần campus nhất mỗi tên ---
+CENTER = (106.79105, 10.87200)
+sw = defaultdict(list)
+for w in ways:
+    nm = w.get('tags', {}).get('name')
+    if nm:
+        sw[nm].append(w)
+streets = []
+for nm, wl in sw.items():
+    best, bd = None, 1e18
+    for w in wl:
+        g = w.get('geometry', [])
+        if len(g) < 2:
+            continue
+        mid = g[len(g) // 2]
+        dd = hav((mid['lon'], mid['lat']), CENTER)
+        if dd < bd:
+            bd, best = dd, w
+    if not best:
+        continue
+    g = best['geometry']; i = len(g) // 2
+    a, b = g[max(0, i - 1)], g[i]
+    if a['lon'] == b['lon'] and a['lat'] == b['lat']:
+        a, b = g[0], g[-1]
+    streets.append((nm, round(a['lon'], 6), round(a['lat'], 6), round(b['lon'], 6), round(b['lat'], 6)))
+print('street labels:', len(streets))
+
 # --- Xuất ../data.js ---
 def js_nodes(nd):
     return '{\n' + ',\n'.join('  %s: [%s, %s]' % (json.dumps(k), v[0], v[1]) for k, v in nd.items()) + '\n}'
@@ -150,9 +177,13 @@ def js_nodes(nd):
 def js_edges(ed):
     return '[\n' + ',\n'.join('  ["%s","%s"]' % (a, b) for a, b in ed) + '\n]'
 
+def js_streets(st):
+    return '[\n' + ',\n'.join('  {n: %s, a: [%s, %s], b: [%s, %s]}' % (json.dumps(n, ensure_ascii=False), ax, ay, bx, by) for (n, ax, ay, bx, by) in st) + '\n]'
+
 header = '/* Dữ liệu campus NLU – toạ độ node đường & toà nhà lấy từ OpenStreetMap (ODbL) */\n'
 gen = ('const DEFAULT_NODES = ' + js_nodes(nodes_out) + ';\n\n'
-       + 'const DEFAULT_EDGES = ' + js_edges(edges_out) + ';\n')
+       + 'const DEFAULT_EDGES = ' + js_edges(edges_out) + ';\n\n'
+       + 'const STREETS = ' + js_streets(streets) + ';\n')
 meta = open(os.path.join(HERE, 'meta.js'), encoding='utf-8').read()
 
 dst = os.path.join(ROOT, 'data.js')

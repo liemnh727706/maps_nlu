@@ -98,6 +98,9 @@
   .mk.det{filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))}
   .mk.sel{stroke:var(--amber);stroke-width:3.5}
   .mklab{fill:#fff;font-weight:800;font-family:ui-monospace,monospace;pointer-events:auto;cursor:pointer;dominant-baseline:middle}
+  .mklab2{fill:var(--ink);text-anchor:middle;dominant-baseline:hanging;font-weight:600;pointer-events:none;stroke:var(--surface);stroke-width:3;paint-order:stroke;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+  .mklab2.sel{fill:var(--route)}
+  .stlab{fill:var(--muted);text-anchor:middle;dominant-baseline:middle;font-weight:600;pointer-events:none;stroke:var(--mapbg);stroke-width:3;paint-order:stroke;stroke-linejoin:round;vector-effect:non-scaling-stroke;letter-spacing:.3px}
   #usermk{fill:#2f7ec2;stroke:#fff}
   .mapctl{position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:6px}
   .mapctl button{width:38px;height:38px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;font-size:17px;cursor:pointer;box-shadow:var(--shadow)}
@@ -172,8 +175,10 @@
   <div class="mapwrap">
     <svg id="map" xmlns="http://www.w3.org/2000/svg">
       <path id="edges" d=""></path>
+      <g id="g-streets"></g>
       <g id="markers"></g>
       <path id="route" d=""></path>
+      <g id="g-labels"></g>
       <circle id="gpsacc" r="0" cx="0" cy="0" opacity="0"></circle>
       <circle id="usermk" r="6" cx="0" cy="0" opacity="0"></circle>
       <path id="gpshead" d="M0 -23 L8 -5 L0 -10 L-8 -5 Z" opacity="0"></path>
@@ -2191,6 +2196,23 @@ const DEFAULT_EDGES = [
   ["UOMTAO","r4837895874"],
   ["BOIDUONG","r8366234750"],
   ["START","r3164002582"]
+];
+
+const STREETS = [
+  {n: "Đỗ Mười", a: [106.790716, 10.867036], b: [106.790435, 10.867112]},
+  {n: "Đường số 5", a: [106.793724, 10.875575], b: [106.793717, 10.875553]},
+  {n: "Đường Số 11", a: [106.785792, 10.876297], b: [106.786804, 10.876008]},
+  {n: "Đường số 1", a: [106.788026, 10.870345], b: [106.787951, 10.870076]},
+  {n: "Đường số 4", a: [106.788719, 10.869278], b: [106.788019, 10.869288]},
+  {n: "Đường số 2", a: [106.789807, 10.86991], b: [106.789809, 10.869644]},
+  {n: "Đường số 8", a: [106.791315, 10.872061], b: [106.790641, 10.872046]},
+  {n: "Đường Số 1", a: [106.790809, 10.875232], b: [106.790679, 10.875062]},
+  {n: "Marie Curie", a: [106.797951, 10.879058], b: [106.797671, 10.879013]},
+  {n: "Isaac Newton", a: [106.796075, 10.873636], b: [106.793438, 10.87573]},
+  {n: "Đường số 6", a: [106.791381, 10.870826], b: [106.791304, 10.870828]},
+  {n: "Leonardo da Vinci", a: [106.786549, 10.879896], b: [106.784814, 10.874581]},
+  {n: "Đường Số 2", a: [106.788754, 10.868154], b: [106.788217, 10.86815]},
+  {n: "Galileo Galilei", a: [106.783564, 10.877704], b: [106.783653, 10.87768]}
 ];
 
 
@@ -4747,6 +4769,12 @@ function openIndoor(dest) {
 
 /* ---- Bản đồ SVG (chiếu toạ độ thật sang lưới mét) ---- */
 let PROJ, WORLD, VB, svgEl, markers = {}, currentDest = null, currentStart = 'START';
+let placeLabels = {}, streetEls = [], lastLabelScale = -1;
+function shortLabel(s) {
+  return s.replace('Giảng đường', 'GĐ').replace('Trung tâm', 'TT').replace('Ký túc xá', 'KTX')
+    .replace('Bãi giữ xe', 'Bãi xe').replace('Văn phòng', 'VP').replace('Nhà điều hành', 'Nhà ĐH')
+    .replace(/\s*\(.*?\)\s*/g, ' ').replace(/\s+/g, ' ').trim();
+}
 let startLabel = NODE_LABEL.START, pickStart = false, tapMoved = false;
 let gpsActive = false, gpsWatch = null, gpsPos = null, firstFix = false;
 let gpsHeading = null, headingHandler = null, gpsXY = null, followMode = false;
@@ -4770,6 +4798,7 @@ function restyle() {
   const u = document.getElementById('usermk'); if (u) { u.setAttribute('r', 6 / scale); u.setAttribute('stroke-width', 2.5 / scale); }
   const gd = document.getElementById('gpsdot'); if (gd) { gd.setAttribute('r', 6.5 / scale); gd.setAttribute('stroke-width', 3 / scale); }
   placeGpsMarker();
+  if (Math.abs(scale - lastLabelScale) > 1e-9) { lastLabelScale = scale; styleLabels(scale); }
 }
 function renderBase() {
   let ed = '';
@@ -4787,6 +4816,40 @@ function renderBase() {
     if (det) { t = document.createElementNS('http://www.w3.org/2000/svg', 'text'); t.setAttribute('x', x); t.setAttribute('y', y); t.setAttribute('text-anchor', 'middle'); t.setAttribute('class', 'mklab'); t.textContent = bk; t.addEventListener('click', e => { e.stopPropagation(); selectDest({ b: bk }); }); g.appendChild(t); }
     markers[bk] = { c, t };
   }
+  // Nhãn tên địa điểm (dưới marker)
+  const gl = document.getElementById('g-labels'); gl.innerHTML = ''; placeLabels = {};
+  for (const bk of order) {
+    const tx = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    tx.setAttribute('class', 'mklab2'); tx.textContent = shortLabel(BUILDINGS[bk].name);
+    tx.addEventListener('click', e => { e.stopPropagation(); selectDest({ b: bk }); });
+    gl.appendChild(tx); placeLabels[bk] = tx;
+  }
+  // Nhãn tên đường
+  const gs = document.getElementById('g-streets'); gs.innerHTML = ''; streetEls = [];
+  if (typeof STREETS !== 'undefined') for (const s of STREETS) {
+    const tx = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    tx.setAttribute('class', 'stlab'); tx.textContent = s.n;
+    gs.appendChild(tx); streetEls.push({ el: tx, a: s.a, b: s.b });
+  }
+  lastLabelScale = -1;
+}
+function styleLabels(scale) {
+  const fs = 12 / scale;
+  const showPOI = scale >= 1.5, showStreet = scale >= 1.15;
+  for (const bk in placeLabels) {
+    const L = placeLabels[bk], [x, y] = P(NODES[bk]);
+    L.setAttribute('x', x); L.setAttribute('y', y + (isDetailed(bk) ? 10 : 7) / scale);
+    L.setAttribute('font-size', fs + 'px');
+    const on = isDetailed(bk) || showPOI || (currentDest && currentDest.b === bk);
+    L.style.display = on ? '' : 'none';
+  }
+  for (const s of streetEls) {
+    const [ax, ay] = P(s.a), [bx, by] = P(s.b); let ang = Math.atan2(by - ay, bx - ax) * 180 / Math.PI;
+    if (ang > 90) ang -= 180; else if (ang < -90) ang += 180;
+    s.el.setAttribute('font-size', (11 / scale) + 'px');
+    s.el.setAttribute('transform', `translate(${(ax + bx) / 2} ${(ay + by) / 2}) rotate(${ang})`);
+    s.el.style.display = showStreet ? '' : 'none';
+  }
 }
 function setUser(id) { if (gpsActive) { document.getElementById('usermk').setAttribute('opacity', 0); return; } const [x, y] = P(NODES[id]); const u = document.getElementById('usermk'); u.setAttribute('cx', x); u.setAttribute('cy', y); u.setAttribute('opacity', 1); }
 function drawRoute(path) { let d = ''; path.forEach((id, i) => { const [x, y] = P(NODES[id]); d += (i ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1); }); document.getElementById('route').setAttribute('d', d); }
@@ -4800,6 +4863,7 @@ function selectDest(dest) {
   currentDest = dest; const B = BUILDINGS[dest.b], r = dijkstra(currentStart, dest.b);
   document.getElementById('results').innerHTML = ''; document.getElementById('q').value = '';
   for (const bk in markers) markers[bk].c.classList.toggle('sel', bk === dest.b);
+  for (const bk in placeLabels) { placeLabels[bk].classList.toggle('sel', bk === dest.b); if (bk === dest.b) placeLabels[bk].style.display = ''; }
   if (!r) { document.getElementById('panel').innerHTML = '<div class="ph">Không tìm được đường tới điểm này.</div>'; return; }
   drawRoute(r.path); setUser(currentStart); if (!(gpsActive && followMode)) fitRoute(r.path);
   const { steps, total } = buildSteps(r.path), mins = Math.max(1, Math.round(total / 1.35 / 60));
