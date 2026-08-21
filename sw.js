@@ -1,5 +1,5 @@
 /* Service worker – app-shell cache cho PWA demo NLU Wayfinder */
-const CACHE = 'nlu-wayfinder-v5';
+const CACHE = 'nlu-wayfinder-v6';
 const SHELL = [
   './',
   './index.html',
@@ -25,8 +25,9 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   // App shell cùng origin: network-first (luôn lấy bản mới khi online), fallback cache khi offline.
   if (url.origin === self.location.origin) {
+    // network-first + bỏ qua HTTP cache của trình duyệt để luôn lấy bản mới nhất; offline -> fallback SW cache.
     e.respondWith(
-      fetch(e.request).then((res) => {
+      fetch(e.request, { cache: 'no-store' }).then((res) => {
         const copy = res.clone();
         caches.open(CACHE).then((c) => c.put(e.request, copy));
         return res;
