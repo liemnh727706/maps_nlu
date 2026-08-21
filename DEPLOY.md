@@ -21,7 +21,9 @@ location ^~ /maps/ {
     try_files $uri $uri/index.html =404;
 
     # --- Bảo mật (add_header ở location THAY THẾ toàn bộ header kế thừa -> khai báo đủ) ---
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://tile.openstreetmap.org https://server.arcgisonline.com; connect-src 'self' https://tile.openstreetmap.org https://server.arcgisonline.com; worker-src 'self' blob:; manifest-src 'self'; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'" always;
+    # script-src có 'unsafe-inline' vì NLU-Wayfinder-Campus.html (artifact) chạy script nội tuyến;
+    # index.html vẫn siết chặt bằng CSP <meta> riêng (script-src 'self') nên không bị nới lỏng.
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://tile.openstreetmap.org https://server.arcgisonline.com; connect-src 'self' https://tile.openstreetmap.org https://server.arcgisonline.com; worker-src 'self' blob:; manifest-src 'self'; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
     add_header Permissions-Policy "geolocation=(self), camera=(), microphone=()" always;   # GPS cho /maps, tắt camera/mic
